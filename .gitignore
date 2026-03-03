@@ -1,0 +1,146 @@
+# Go build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+psbt
+main
+
+# Go test files
+*.test
+*.prof
+*.cover
+*.out
+coverage.txt
+coverage.html
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Vendor directory 
+vendor/
+
+# Go module cache
+# Note: go.sum should be committed
+*.sum.backup
+
+# Temporary Go files
+*.tmp
+*.temp
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+
+# Vim
+*.swp
+*.swo
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Local development environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Documentation build outputs
+docs/_build/
+site/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Temporary directories
+tmp/
+temp/
+
+# Bitcoin/Crypto related (if any test keys or data)
+*.key
+*.pem
+testdata/*.dat
+testdata/*.bin
+
+# Build artifacts
+build/
+dist/
+bin/
+
+# Debian package builds
+*.deb
+*.rpm
+
+# Docker
+.dockerignore
+Dockerfile.dev
+
+# Performance profiling
+*.prof
+*.trace
+profile.png
+profile.pdf
+
+# Benchmark results
+bench.txt
+benchmarks/
+
+# Local development scripts
+dev.sh
+local.sh
+test.sh
+
+# Git specific
+*.patch
+*.diff
+
+# Dependency tracking backup
+Gopkg.lock.backup
