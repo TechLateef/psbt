@@ -1,50 +1,93 @@
 # PSBT (Go Implementation)
 
-A minimal, spec-focused, and educational implementation of the Bitcoin Partially Signed Bitcoin Transaction (PSBT) format in Go.
+A minimal, spec-focused, and educational implementation of the Bitcoin Partially Signed Bitcoin Transaction (PSBT) format written in Go.
+
+This library aims to provide a clean and readable reference implementation of PSBT while staying close to the official Bitcoin Improvement Proposals.
 
 ## Specification Compliance
 
 This project implements the PSBT specifications defined in:
-- **[BIP 174](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki)** - PSBT v0 (Partially Signed Bitcoin Transactions)
-- **[BIP 370](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki)** - PSBT v2 (Version 2 Partially Signed Bitcoin Transactions)
+
+**[BIP 174](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki)** — PSBT v0 (Partially Signed Bitcoin Transactions)
+
+**[BIP 370](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki)** — PSBT v2 (PSBT Version 2)
+
+These specifications define a standardized format for constructing, signing, and finalizing Bitcoin transactions across multiple participants.
 
 ## Goals
 
-- 🎓 **Educational**: Provide a clean and readable PSBT implementation for learning
-- 📋 **Spec-focused**: Follow the BIP specifications closely without unnecessary abstractions  
-- 🏗️ **Simple architecture**: Keep the codebase maintainable and understandable
-- 🔄 **Multi-version support**: Handle both PSBT v0 and PSBT v2 formats
-- ✅ **Robust validation**: Comprehensive error checking and input validation
+🎓 **Educational** — clear and readable implementation for learning PSBT internals
+
+📜 **Spec-focused** — follows the BIP specifications closely
+
+🧱 **Simple architecture** — minimal abstractions and easy to understand
+
+🔄 **Multi-version support** — supports PSBT v0 and PSBT v2
+
+🛡 **Safe defaults** — built-in validation and structural checks
 
 ## Current Features
 
-- ✅ **PSBT decoding** from binary format
-- ✅ **Global/Input/Output map parsing** with proper key-value handling
-- ✅ **Version detection** (automatically detects v0/v2 format)
-- ✅ **Structural validation** (magic bytes, format compliance)
-- ✅ **Duplicate key detection** across all maps
-- ✅ **CompactSize integer** encoding/decoding
-- ✅ **Unsigned transaction parsing** and metadata extraction
+### Core PSBT Support
+
+✅ PSBT decoding from binary format
+
+✅ Global/Input/Output map parsing
+
+✅ Version detection (v0 / v2)
+
+✅ Duplicate key detection
+
+✅ CompactSize integer parsing
+
+✅ Structural validation
+
+### Transaction Utilities
+
+✅ Unsigned transaction parsing (v0)
+
+✅ Transaction reconstruction (v2)
+
+✅ Field extraction helpers
+
+### Developer-Friendly API
+
+✅ `Decode()` — parse PSBT
+
+✅ `DecodeAndValidate()` — safe decoding
+
+✅ `GetVersion()` — detect PSBT version
+
+✅ `IsV0()` / `IsV2()` helpers
+
+✅ `Reconstruct()` — build transaction from PSBT
 
 ## Project Structure
 
 ```
 psbt/
-├── psbt.go                    # Main PSBT decoding functionality
-├── errors.go                 # Custom error types
+├── psbt.go               # PSBT decoding logic
+├── reconstruct.go        # Transaction reconstruction
+├── fields.go             # PSBT field extraction helpers
+├── version.go            # Version helpers
+├── api.go                # Public convenience APIs
+├── errors.go             # Custom error types
+│
 ├── types/
-│   └── types.go              # Core PSBT data structures
+│   └── types.go          # Core PSBT + transaction structures
+│
 ├── internal/
 │   ├── parser/
-│   │   └── map.go           # PSBT map and header parsing
-│   ├── compactsize/         # Bitcoin CompactSize integer handling
+│   │   └── map.go        # PSBT map parsing
+│   │
+│   ├── compactsize/      # Bitcoin CompactSize integers
 │   │   ├── read.go
 │   │   ├── write.go
-│   │   └── frombyte.go
-│   ├── validate/
-│   │   └── validate.go      # PSBT validation logic
-│   ├── keys/                # Key handling utilities
-│   └── serialize/           # Serialization utilities
+│   │   └── frombytes.go
+│   │
+│   └── validate/
+│       └── validate.go   # Structural PSBT validation
+│
 ├── go.mod
 └── README.md
 ```
@@ -57,132 +100,204 @@ go get github.com/Techlateef/psbt
 
 ## Example Usage
 
-### Basic PSBT Decoding and Validation
+### Decode and Validate a PSBT
 
 ```go
 package main
 
 import (
-    "os"
-    "fmt"
-    
-    "github.com/Techlateef/psbt"
-    "github.com/Techlateef/psbt/internal/validate" 
+	"fmt"
+	"os"
+
+	"github.com/Techlateef/psbt"
 )
 
 func main() {
-    // Open PSBT file
-    file, err := os.Open("example.psbt")
-    if err != nil {
-        panic(err)
-    }
-    defer file.Close()
 
-    // Decode PSBT
-    p, err := psbt.Decode(file)
-    if err != nil {
-        panic(err)
-    }
+	file, err := os.Open("example.psbt")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
 
-    // Validate PSBT structure
-    err = validate.Validate(p)
-    if err != nil {
-        panic(err)
-    }
+	psbtData, err := psbt.DecodeAndValidate(file)
+	if err != nil {
+		panic(err)
+	}
 
-    fmt.Printf("Successfully decoded PSBT with %d inputs and %d outputs\n", 
-        len(p.Inputs), len(p.Outputs))
+	fmt.Printf(
+		"PSBT contains %d inputs and %d outputs\n",
+		len(psbtData.Inputs),
+		len(psbtData.Outputs),
+	)
 }
+```
+
+### Detect PSBT Version
+
+```go
+version, err := psbt.GetVersion(p)
+if err != nil {
+	panic(err)
+}
+
+fmt.Println("PSBT Version:", version)
+
+isV2, _ := psbt.IsV2(p)
+if isV2 {
+	fmt.Println("PSBT is version 2")
+}
+```
+
+### Reconstruct a Transaction (PSBT v2)
+
+```go
+tx, err := psbt.Reconstruct(p)
+if err != nil {
+	panic(err)
+}
+
+fmt.Println("Transaction Version:", tx.Version)
+fmt.Println("Inputs:", len(tx.Inputs))
+fmt.Println("Outputs:", len(tx.Outputs))
 ```
 
 ### Working with PSBT Data
 
 ```go
-// Access global map data
-for _, kv := range p.Global.Pairs {
-    fmt.Printf("Global key: %x, value: %x\n", kv.Key, kv.Value)
-}
+package main
 
-// Access input maps
-for i, input := range p.Inputs {
-    fmt.Printf("Input %d has %d key-value pairs\n", i, len(input.Pairs))
-}
+import (
+	"fmt"
+	"os"
+	
+	"github.com/Techlateef/psbt"
+)
 
-// Access output maps  
-for i, output := range p.Outputs {
-    fmt.Printf("Output %d has %d key-value pairs\n", i, len(output.Pairs))
+func main() {
+	file, err := os.Open("example.psbt")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	p, err := psbt.Decode(file)
+	if err != nil {
+		panic(err)
+	}
+
+	// Access global map data
+	for _, kv := range p.Global.Pairs {
+		fmt.Printf("Global key: %x, value: %x\n", kv.Key, kv.Value)
+	}
+
+	// Access input maps
+	for i, input := range p.Inputs {
+		fmt.Printf("Input %d has %d key-value pairs\n", i, len(input.Pairs))
+	}
+
+	// Access output maps
+	for i, output := range p.Outputs {
+		fmt.Printf("Output %d has %d key-value pairs\n", i, len(output.Pairs))
+	}
 }
 ```
 
-## API Reference
-
-### Main Functions
-
-- `psbt.Decode(r io.Reader) (*types.PSBT, error)` - Decode PSBT from binary format
-- `validate.Validate(p *types.PSBT) error` - Validate PSBT structure and detect duplicates
-
-### Core Types
+## Core Types
 
 ```go
 type PSBT struct {
-    Version uint32
-    Global  PSBTMap
-    Inputs  []PSBTMap
-    Outputs []PSBTMap
+	Global  PSBTMap
+	Inputs  []PSBTMap
+	Outputs []PSBTMap
 }
 
 type PSBTMap struct {
-    Pairs []KV
+	Pairs []KV
 }
 
 type KV struct {
-    Key   []byte
-    Value []byte
+	Key   []byte
+	Value []byte
 }
 ```
 
-## Validation Features
+Transaction types:
 
-The validation system checks for:
-- **Duplicate keys** within the same map (forbidden by spec)
-- **Proper key ordering** (keys must be in strictly increasing order)
-- **Valid PSBT magic bytes** (`psbt` + separator)
-- **Correct CompactSize encoding** for integers
-- **Segwit transaction restrictions** in unsigned transactions
+```go
+type Transaction struct {
+	Version  uint32
+	Inputs   []TxInput
+	Outputs  []TxOutput
+	LockTime uint32
+}
+
+type TxInput struct {
+	PreviousOutput OutPoint
+	ScriptSig      []byte
+	Sequence       uint32
+}
+
+type TxOutput struct {
+	Value        uint64
+	ScriptPubKey []byte
+}
+
+type OutPoint struct {
+	Hash  [32]byte
+	Index uint32
+}
+```
+
+## Validation
+
+The validation system checks:
+
+- Duplicate keys in PSBT maps
+- Proper map structure
+- PSBT magic bytes (`psbt\xff`)
+- Correct CompactSize encodings
+- Required fields for PSBT v0 and v2
 
 ## Status
 
-🚧 **Work in progress** - This implementation is actively being developed.
+🚧 **Active Development**
 
-## Development Roadmap
+Current focus areas:
+- improving validation
+- extending PSBT utilities
+- expanding test coverage
 
-### 🚧 Work in Progress
-- [ ] **Transaction reconstruction** from PSBT data
-- [ ] **Signing support** with private keys
-- [ ] **PSBT finalization** (combining signatures)
-- [ ] **PSBT serialization** (encoding back to binary)
+## Roadmap
 
-### 🔮 Future Enhancements
-- [ ] **Hardware wallet integration**
-- [ ] **Advanced validation rules**
-- [ ] **PSBT combining/merging**
-- [ ] **Comprehensive test suite**
-- [ ] **CLI tools**
+### Near Term
+
+- [ ] PSBT serialization (encoding)
+- [ ] PSBT combining
+- [ ] Improved validation rules
+- [ ] Comprehensive test suite
+
+### Future Features
+
+- [ ] Transaction signing
+- [ ] PSBT finalization
+- [ ] Hardware wallet compatibility
+- [ ] CLI utilities
 
 ## Contributing
 
-This project is designed to be educational and welcomes contributions that:
-- Follow the PSBT specifications closely
-- Include comprehensive tests
-- Maintain code readability and documentation
-- Add meaningful validation or functionality
+Contributions are welcome. This project values:
+
+- spec-accurate implementations
+- readable and well-structured code
+- meaningful validation checks
+- thorough testing
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License
 
 ## References
 
-- [BIP 174 - PSBT v0](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki)
-- [BIP 370 - PSBT v2](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki)
-- [Bitcoin Core implementation](https://github.com/bitcoin/bitcoin/blob/master/src/psbt.h)
+- [BIP 174](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki) — Partially Signed Bitcoin Transactions
+- [BIP 370](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki) — PSBT Version 2
